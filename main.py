@@ -4,8 +4,8 @@ Main CLI script for whiteboard to LaTeX conversion.
 
 import sys
 import os
-from preprocess import preprocess_image
-from model_infer import Pix2TexModel
+from src.preprocess import preprocess_image
+from src.model_infer import Pix2TexModel
 
 
 def main():
@@ -25,7 +25,8 @@ def main():
     
     # Preprocess the image
     print(f"Preprocessing image: {input_image_path}")
-    preprocessed_path = "preprocessed_temp.png"
+    os.makedirs("output", exist_ok=True)
+    preprocessed_path = os.path.join("output", "preprocessed_temp.png")
     
     try:
         preprocess_image(input_image_path, preprocessed_path)
@@ -56,8 +57,9 @@ def main():
     print(latex_result)
     print("="*50 + "\n")
     
-    # Save to output.tex
-    output_file = "output.tex"
+    # Save to output.tex in output directory
+    os.makedirs("output", exist_ok=True)
+    output_file = os.path.join("output", "output.tex")
     try:
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(latex_result)

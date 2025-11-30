@@ -1,5 +1,7 @@
 # Whiteboard to LaTeX Converter
 
+Test -> https://www.text2latex.com/
+
 A simple computer vision project that converts whiteboard math photos into LaTeX format using classical image preprocessing and the pix2tex pretrained model.
 
 ## Overview
@@ -10,8 +12,9 @@ This project takes a whiteboard image as input, preprocesses it using OpenCV, an
 
 - **Classical CV Preprocessing**: Grayscale conversion, blur, adaptive threshold, noise removal, deskew, and resizing
 - **Pretrained Model**: Uses the official pix2tex model for LaTeX recognition
+- **Web Application**: Beautiful web interface with drag-and-drop image upload and LaTeX rendering
 - **Simple CLI**: Easy-to-use command-line interface
-- **Minimal Setup**: Only 3 main Python files
+- **Minimal Setup**: Clean project structure
 
 ## Requirements
 
@@ -21,6 +24,7 @@ This project takes a whiteboard image as input, preprocesses it using OpenCV, an
 - PyTorch
 - NumPy
 - Pillow
+- Flask (for web app)
 
 ## Setup
 
@@ -49,13 +53,37 @@ pip install -r requirements.txt
 
 ## Usage
 
-### Basic Usage
+### Web Application (Recommended)
+
+Start the Flask web server:
+
+```bash
+python app.py
+```
+
+Then open your browser and navigate to:
+```
+http://localhost:5001
+```
+
+**Note**: Port 5001 is used instead of 5000 to avoid conflicts with macOS AirPlay Receiver.
+
+The web interface allows you to:
+- Upload images via drag-and-drop or file picker
+- Preview the uploaded image
+- Process the image and get LaTeX output
+- View both the raw LaTeX code and rendered mathematical formula
+- Copy the LaTeX code to clipboard
+
+### Command Line Interface
+
+For CLI usage:
 
 ```bash
 python main.py <image_path>
 ```
 
-### Example
+#### Example
 
 ```bash
 python main.py samples/example.jpg
@@ -67,27 +95,43 @@ The script will:
 3. Print the LaTeX output to the console
 4. Save the LaTeX result to `output.tex`
 
-### Output
+#### Output
 
 - Console output: Displays the recognized LaTeX string
-- File output: Saves LaTeX to `output.tex` in the project root
+- File output: Saves LaTeX to `output/output.tex`
 
 ## Project Structure
 
 ```
 whiteboard-tex-simple/
-├── preprocess.py          # Image preprocessing functions
-├── model_infer.py         # Pix2Tex model wrapper
+├── app.py                 # Web application entry point
 ├── main.py                # CLI entry point
 ├── requirements.txt       # Python dependencies
 ├── README.md              # This file
-└── samples/
-    └── example.jpg        # Sample whiteboard image
+├── src/                   # Core modules
+│   ├── __init__.py
+│   ├── preprocess.py      # Image preprocessing functions
+│   └── model_infer.py     # Pix2Tex model wrapper
+├── web/                   # Web application
+│   ├── app.py             # Flask application
+│   ├── templates/
+│   │   └── index.html     # Web app frontend
+│   └── static/
+│       ├── css/
+│       │   └── style.css  # Web app styling
+│       └── js/
+│           └── app.js     # Web app JavaScript
+├── samples/               # Sample images
+│   └── example.jpg
+├── output/                # CLI output directory (auto-created)
+└── uploads/               # Web app upload directory (auto-created)
 ```
 
 ## File Descriptions
 
-### `preprocess.py`
+### Core Modules (`src/`)
+
+#### `src/preprocess.py`
 Contains the `preprocess_image()` function that applies classical computer vision techniques:
 - Grayscale conversion
 - Gaussian blur
@@ -96,16 +140,50 @@ Contains the `preprocess_image()` function that applies classical computer visio
 - Morphological operations for noise removal
 - Resizing to fixed width (1500px)
 
-### `model_infer.py`
+#### `src/model_infer.py`
 Contains the `Pix2TexModel` class that:
 - Loads the pretrained pix2tex model
 - Provides a `predict()` method for LaTeX recognition
 
-### `main.py`
-Main CLI script that:
+### Entry Points
+
+#### `main.py`
+CLI script that:
 - Accepts input image path
 - Orchestrates preprocessing and inference
 - Outputs LaTeX result to console and file
+- Saves output to `output/output.tex`
+
+#### `app.py`
+Web application entry point that:
+- Imports and runs the Flask application
+- Starts the web server on port 5000
+
+### Web Application (`web/`)
+
+#### `web/app.py`
+Flask application that:
+- Provides a web interface for image upload
+- Handles file uploads and processing
+- Returns LaTeX results as JSON
+- Renders results in the browser with MathJax
+
+#### `web/templates/index.html`
+Main web interface with:
+- Drag-and-drop image upload
+- Image preview
+- LaTeX code display
+- Rendered mathematical formula using MathJax
+
+#### `web/static/css/style.css`
+Modern, responsive styling for the web interface
+
+#### `web/static/js/app.js`
+Client-side JavaScript for:
+- File upload handling
+- Image preview
+- API communication
+- LaTeX rendering
 
 ## Notes
 
@@ -121,7 +199,7 @@ If the model fails to download automatically, you may need to download it manual
 ### Memory Issues
 If you encounter memory issues, try:
 - Processing smaller images
-- Reducing the resize width in `preprocess.py` (default: 1500px)
+- Reducing the resize width in `src/preprocess.py` (default: 1500px)
 
 ### Dependency Conflicts
 If you encounter dependency conflicts, use a fresh virtual environment:

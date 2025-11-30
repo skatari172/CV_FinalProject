@@ -3,4 +3,6 @@ numpy
 pix2tex
 torch
 Pillow
+Flask
+Werkzeug
 

@@ -3,6 +3,7 @@ Model inference module for LaTeX recognition using pix2tex.
 """
 
 from pix2tex.cli import LatexOCR
+from PIL import Image
 
 
 class Pix2TexModel:
@@ -27,6 +28,8 @@ class Pix2TexModel:
         Returns:
             LaTeX string representation of the equation
         """
-        latex_result = self.model(image_path)
+        # Load image as PIL Image for pix2tex (it expects PIL Image, not file path)
+        img = Image.open(image_path)
+        latex_result = self.model(img)
         return latex_result
 
