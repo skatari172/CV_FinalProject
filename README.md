@@ -222,6 +222,3 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## License
-
-This project is provided as-is for educational purposes.

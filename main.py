@@ -1,16 +1,23 @@
 """
 Main CLI script for whiteboard to LaTeX conversion.
+Run from command line: python main.py path/to/image.jpg
 """
 
+# System utilities for command line arguments and file operations
 import sys
 import os
+# Import our preprocessing function that cleans up the image
 from src.preprocess import preprocess_image
+# Import the model wrapper that runs the LaTeX recognition
 from src.model_infer import Pix2TexModel
 
 
 def main():
-    """Main entry point for the whiteboard to LaTeX converter."""
-    # Check if input image path is provided
+    """
+    Main workflow: validate input, preprocess image, run model, save result.
+    This is the command-line interface version of the application.
+    """
+    # Make sure user provided an image path as an argument
     if len(sys.argv) != 2:
         print("Usage: python main.py <image_path>")
         print("Example: python main.py samples/example.jpg")
@@ -18,12 +25,12 @@ def main():
     
     input_image_path = sys.argv[1]
     
-    # Validate input file exists
+    # Verify the file actually exists before we try to process it
     if not os.path.exists(input_image_path):
         print(f"Error: Image file not found: {input_image_path}")
         sys.exit(1)
     
-    # Preprocess the image
+    # Step 1: Clean up and enhance the image using CV techniques
     print(f"Preprocessing image: {input_image_path}")
     os.makedirs("output", exist_ok=True)
     preprocessed_path = os.path.join("output", "preprocessed_temp.png")
@@ -35,14 +42,14 @@ def main():
         print(f"Error during preprocessing: {e}")
         sys.exit(1)
     
-    # Initialize model
+    # Step 2: Load the deep learning model (this takes a few seconds the first time)
     try:
         model = Pix2TexModel()
     except Exception as e:
         print(f"Error loading model: {e}")
         sys.exit(1)
     
-    # Run inference
+    # Step 3: Run the model on the preprocessed image to get LaTeX
     print("Running LaTeX recognition...")
     try:
         latex_result = model.predict(preprocessed_path)
@@ -50,14 +57,14 @@ def main():
         print(f"Error during inference: {e}")
         sys.exit(1)
     
-    # Print result
+    # Display the result in the terminal
     print("\n" + "="*50)
     print("LaTeX Output:")
     print("="*50)
     print(latex_result)
     print("="*50 + "\n")
     
-    # Save to output.tex in output directory
+    # Step 4: Save the LaTeX to a file so user can use it later
     os.makedirs("output", exist_ok=True)
     output_file = os.path.join("output", "output.tex")
     try:
@@ -68,7 +75,7 @@ def main():
         print(f"Error saving output: {e}")
         sys.exit(1)
     
-    # Clean up temporary preprocessed image
+    # Clean up the temporary preprocessed image file
     try:
         if os.path.exists(preprocessed_path):
             os.remove(preprocessed_path)

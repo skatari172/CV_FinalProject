@@ -13,3 +13,4 @@ output.tex
 .venv
 *.db
 *.sqlite3
+REPORT.md

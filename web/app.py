@@ -1,71 +1,91 @@
 """
 Flask web application for whiteboard to LaTeX conversion.
+This handles the web interface - serving the HTML page and processing image uploads.
 """
 
-import os
-import sys
-import uuid
+# Standard library imports
+import os  # File system operations
+import sys  # Path manipulation
+import uuid  # Generate unique filenames for uploads
+
+# Flask imports - framework for building the web API
 from flask import Flask, render_template, request, jsonify
 
-# Add parent directory to path to import from src
+# Add parent directory to Python path so we can import from src/
+# This is needed because Flask app is in web/ subdirectory
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+# Import our core processing modules
 from src.preprocess import preprocess_image
 from src.model_infer import Pix2TexModel
 
-# Get the web directory path
+# Get paths for Flask configuration
 web_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Initialize Flask app with template and static folders
+# Create Flask app and tell it where to find HTML templates and CSS/JS files
 app = Flask(
     __name__,
     template_folder=os.path.join(web_dir, 'templates'),
     static_folder=os.path.join(web_dir, 'static')
 )
 
-# Get the project root directory (one level up from web/)
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
+# Configure where to store uploaded images
 app.config['UPLOAD_FOLDER'] = os.path.join(project_root, 'uploads')
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Max 16MB file size
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
 
-# Create uploads directory if it doesn't exist
+# Create uploads folder if it doesn't exist yet
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Initialize model globally (loads once when server starts)
+# Load the model once when server starts - this takes time, so we do it once
+# The same model instance is reused for all requests (much faster)
 print("Initializing pix2tex model...")
 model = Pix2TexModel()
 
 
 def allowed_file(filename):
-    """Check if file extension is allowed."""
+    """
+    Check if the uploaded file has an allowed image extension.
+    Returns True if it's PNG, JPG, JPEG, GIF, or BMP.
+    """
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
 
 @app.route('/')
 def index():
-    """Render the main page."""
+    """
+    Serve the main web page - the HTML with upload form and result display.
+    Flask automatically finds index.html in the templates folder.
+    """
     return render_template('index.html')
 
 
 @app.route('/process', methods=['POST'])
 def process_image():
-    """Process uploaded image and return LaTeX result."""
+    """
+    Handle image upload and processing.
+    This is the API endpoint that the frontend calls when user clicks "Process Image".
+    Returns JSON with either the LaTeX result or an error message.
+    """
+    # Check that an image file was actually uploaded
     if 'image' not in request.files:
         return jsonify({'error': 'No image file provided'}), 400
     
     file = request.files['image']
     
+    # Make sure user selected a file (not just an empty form)
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
     
+    # Verify it's a supported image type
     if not allowed_file(file.filename):
         return jsonify({'error': 'Invalid file type. Allowed: PNG, JPG, JPEG, GIF, BMP'}), 400
     
     try:
-        # Generate unique filename to avoid conflicts
+        # Generate unique filenames using UUID so multiple users can upload simultaneously
+        # without overwriting each other's files
         file_ext = file.filename.rsplit('.', 1)[1].lower()
         unique_id = str(uuid.uuid4())
         input_filename = f"input_{unique_id}.{file_ext}"
@@ -74,29 +94,30 @@ def process_image():
         input_path = os.path.join(app.config['UPLOAD_FOLDER'], input_filename)
         preprocessed_path = os.path.join(app.config['UPLOAD_FOLDER'], preprocessed_filename)
         
-        # Save uploaded file
+        # Save the uploaded file to disk
         file.save(input_path)
         
-        # Preprocess image
+        # Step 1: Clean up and enhance the image (grayscale, blur, contrast, deskew, resize)
         preprocess_image(input_path, preprocessed_path)
         
-        # Run model inference
+        # Step 2: Run the deep learning model to convert image to LaTeX text
         latex_result = model.predict(preprocessed_path)
         
-        # Clean up temporary files
+        # Delete temporary files to save disk space
         try:
             os.remove(input_path)
             os.remove(preprocessed_path)
         except:
-            pass  # Ignore cleanup errors
+            pass  # If cleanup fails, it's not critical - just continue
         
+        # Send success response with the LaTeX code
         return jsonify({
             'success': True,
             'latex': latex_result
         })
     
     except Exception as e:
-        # Clean up on error
+        # If anything goes wrong, try to clean up files and return error message
         try:
             if 'input_path' in locals() and os.path.exists(input_path):
                 os.remove(input_path)
@@ -105,6 +126,7 @@ def process_image():
         except:
             pass
         
+        # Return error response with details
         return jsonify({
             'success': False,
             'error': str(e)
