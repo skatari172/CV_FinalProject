@@ -1,20 +1,30 @@
-# Whiteboard to LaTeX Converter
+# Image to LaTeX Converter
 
-Test -> https://www.text2latex.com/
+A computer vision project that converts images of mathematical equations into LaTeX format using classical image preprocessing and the pix2tex pretrained model.
 
-A simple computer vision project that converts whiteboard math photos into LaTeX format using classical image preprocessing and the pix2tex pretrained model.
+**Demo**: https://www.text2latex.com/
 
 ## Overview
 
-This project takes a whiteboard image as input, preprocesses it using OpenCV, and uses the pix2tex model to recognize mathematical equations and convert them to LaTeX format.
+This project takes an image containing a mathematical equation as input, preprocesses it using OpenCV, and uses the pix2tex model to recognize the equation and convert it to LaTeX format. It works best with screenshots of digital/online text, rendered equations from PDFs, textbooks, and other printed sources.
 
 ## Features
 
-- **Classical CV Preprocessing**: Grayscale conversion, blur, adaptive threshold, noise removal, deskew, and resizing
+- **Classical CV Preprocessing**: Grayscale conversion, Gaussian blur, CLAHE contrast enhancement, deskewing, and resizing
 - **Pretrained Model**: Uses the official pix2tex model for LaTeX recognition
-- **Web Application**: Beautiful web interface with drag-and-drop image upload and LaTeX rendering
-- **Simple CLI**: Easy-to-use command-line interface
-- **Minimal Setup**: Clean project structure
+- **Web Application**: Modern web interface with drag-and-drop image upload and real-time LaTeX rendering
+- **Simple CLI**: Command-line interface for batch processing
+- **Clean Architecture**: Well-organized project structure
+
+## Supported Input Types
+
+| Input Type | Expected Quality |
+|------------|------------------|
+| Screenshots of rendered LaTeX | ✅ Excellent |
+| PDF equation screenshots | ✅ Excellent |
+| Textbook photos | ✅ Good |
+| Online math content | ✅ Good |
+| Handwritten equations | ⚠️ Variable |
 
 ## Requirements
 
@@ -29,8 +39,6 @@ This project takes a whiteboard image as input, preprocesses it using OpenCV, an
 ## Setup
 
 ### 1. Create a Virtual Environment (Recommended)
-
-It's highly recommended to use a virtual environment to isolate dependencies:
 
 ```bash
 # Create virtual environment
@@ -90,10 +98,10 @@ python main.py samples/example.jpg
 ```
 
 The script will:
-1. Preprocess the image (grayscale, blur, threshold, noise removal, deskew, resize)
+1. Preprocess the image (grayscale, blur, contrast enhancement, deskew, resize)
 2. Run the pix2tex model on the preprocessed image
 3. Print the LaTeX output to the console
-4. Save the LaTeX result to `output.tex`
+4. Save the LaTeX result to `output/output.tex`
 
 #### Output
 
@@ -103,7 +111,7 @@ The script will:
 ## Project Structure
 
 ```
-whiteboard-tex-simple/
+image-to-latex/
 ├── app.py                 # Web application entry point
 ├── main.py                # CLI entry point
 ├── requirements.txt       # Python dependencies
@@ -127,18 +135,42 @@ whiteboard-tex-simple/
 └── uploads/               # Web app upload directory (auto-created)
 ```
 
+## Computer Vision Techniques
+
+This project applies several classical CV techniques for image preprocessing:
+
+### 1. Grayscale Conversion
+Reduces 3-channel color image to single-channel grayscale, simplifying processing.
+
+### 2. Gaussian Blur
+Applies a 3×3 Gaussian kernel to reduce high-frequency noise while preserving edges.
+
+### 3. CLAHE (Contrast Limited Adaptive Histogram Equalization)
+Enhances local contrast without over-amplifying noise. Divides image into tiles and applies histogram equalization with a clip limit.
+
+### 4. Otsu's Thresholding
+Automatic threshold selection for binarization by maximizing inter-class variance. Used for line detection during deskewing.
+
+### 5. Hough Line Transform
+Detects straight lines in the image using parametric representation (ρ, θ). Used to estimate skew angle.
+
+### 6. Affine Transformation
+Applies rotation matrix to correct detected skew angle, aligning text horizontally.
+
+### 7. Image Resizing
+Scales image to target width (800px) using INTER_AREA interpolation for optimal downscaling quality.
+
 ## File Descriptions
 
 ### Core Modules (`src/`)
 
 #### `src/preprocess.py`
-Contains the `preprocess_image()` function that applies classical computer vision techniques:
+Contains the `preprocess_image()` function that applies the CV pipeline:
 - Grayscale conversion
-- Gaussian blur
-- Adaptive thresholding
+- Gaussian blur (3×3 kernel)
+- CLAHE contrast enhancement
 - Optional deskew using Hough transform
-- Morphological operations for noise removal
-- Resizing to fixed width (1500px)
+- Resizing to 800px width
 
 #### `src/model_infer.py`
 Contains the `Pix2TexModel` class that:
@@ -148,61 +180,42 @@ Contains the `Pix2TexModel` class that:
 ### Entry Points
 
 #### `main.py`
-CLI script that:
-- Accepts input image path
-- Orchestrates preprocessing and inference
-- Outputs LaTeX result to console and file
-- Saves output to `output/output.tex`
+CLI script that orchestrates preprocessing and inference.
 
 #### `app.py`
-Web application entry point that:
-- Imports and runs the Flask application
-- Starts the web server on port 5000
+Web application entry point that starts the Flask server.
 
 ### Web Application (`web/`)
 
 #### `web/app.py`
-Flask application that:
-- Provides a web interface for image upload
-- Handles file uploads and processing
-- Returns LaTeX results as JSON
-- Renders results in the browser with MathJax
+Flask application with routes for serving the UI and processing images.
 
 #### `web/templates/index.html`
-Main web interface with:
-- Drag-and-drop image upload
-- Image preview
-- LaTeX code display
-- Rendered mathematical formula using MathJax
+Frontend with drag-and-drop upload and MathJax rendering.
 
-#### `web/static/css/style.css`
-Modern, responsive styling for the web interface
-
-#### `web/static/js/app.js`
-Client-side JavaScript for:
-- File upload handling
-- Image preview
-- API communication
-- LaTeX rendering
+#### `web/static/`
+CSS styling and JavaScript for the web interface.
 
 ## Notes
 
-- **Single-line processing**: The project treats the entire whiteboard as one equation line (no multi-line detection)
-- **First run**: The pix2tex model will be downloaded automatically on first use (~500MB)
-- **Image format**: Supports common image formats (JPG, PNG, etc.)
+- **Single-line processing**: Treats the entire image as one equation (no multi-line detection)
+- **Best results**: Use clean screenshots of rendered equations
+- **First run**: Model downloads automatically (~500MB)
+- **Image format**: Supports JPG, PNG, GIF, BMP
 
 ## Troubleshooting
 
 ### Model Download Issues
-If the model fails to download automatically, you may need to download it manually. Check the [pix2tex documentation](https://github.com/lukas-blecher/LaTeX-OCR) for details.
+If the model fails to download automatically, check the [pix2tex documentation](https://github.com/lukas-blecher/LaTeX-OCR).
 
 ### Memory Issues
-If you encounter memory issues, try:
-- Processing smaller images
-- Reducing the resize width in `src/preprocess.py` (default: 1500px)
+Try processing smaller images or reducing resize width in `src/preprocess.py`.
+
+### Port Conflict
+If port 5001 is in use, modify the port in `app.py`.
 
 ### Dependency Conflicts
-If you encounter dependency conflicts, use a fresh virtual environment:
+Use a fresh virtual environment:
 ```bash
 python3 -m venv venv
 source venv/bin/activate
@@ -212,4 +225,3 @@ pip install -r requirements.txt
 ## License
 
 This project is provided as-is for educational purposes.
-
