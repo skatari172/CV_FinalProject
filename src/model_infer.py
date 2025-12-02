@@ -25,9 +25,6 @@ class Pix2TexModel:
     def predict(self, image_path: str) -> str:
         """
         Take a preprocessed image and convert it to LaTeX text.
-        
-        Args:
-            image_path: Path to the preprocessed image file
             
         Returns:
             LaTeX string like "E = mc^2" or "\\frac{a}{b}"
@@ -35,6 +32,7 @@ class Pix2TexModel:
         # pix2tex needs a PIL Image object, not just a file path
         # This is important - passing a string path will cause errors
         img = Image.open(image_path)
+        
         # Run the model - it uses a CNN encoder and transformer decoder internally
         latex_result = self.model(img)
         return latex_result

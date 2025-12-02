@@ -1,4 +1,9 @@
 """
+ARCHIVED! No longer doing whiteboard math recognition. Only doing text to LaTeX.
+"""
+
+
+"""
 Image preprocessing module for whiteboard math photos.
 Applies classical CV techniques to clean images before LaTeX recognition.
 

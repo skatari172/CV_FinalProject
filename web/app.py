@@ -11,13 +11,13 @@ import uuid  # Generate unique filenames for uploads
 # Flask imports - framework for building the web API
 from flask import Flask, render_template, request, jsonify
 
+# Import our core processing modules and cv model
+from src.preprocess import preprocess_image
+from src.model_infer import Pix2TexModel
+
 # Add parent directory to Python path so we can import from src/
 # This is needed because Flask app is in web/ subdirectory
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-
-# Import our core processing modules
-from src.preprocess import preprocess_image
-from src.model_infer import Pix2TexModel
 
 # Get paths for Flask configuration
 web_dir = os.path.dirname(os.path.abspath(__file__))
@@ -47,7 +47,6 @@ model = Pix2TexModel()
 def allowed_file(filename):
     """
     Check if the uploaded file has an allowed image extension.
-    Returns True if it's PNG, JPG, JPEG, GIF, or BMP.
     """
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
@@ -57,7 +56,6 @@ def allowed_file(filename):
 def index():
     """
     Serve the main web page - the HTML with upload form and result display.
-    Flask automatically finds index.html in the templates folder.
     """
     return render_template('index.html')
 
@@ -100,7 +98,7 @@ def process_image():
         # Step 1: Clean up and enhance the image (grayscale, blur, contrast, deskew, resize)
         preprocess_image(input_path, preprocessed_path)
         
-        # Step 2: Run the deep learning model to convert image to LaTeX text
+        # Step 2: Run the pic2text model to convert image to LaTeX text
         latex_result = model.predict(preprocessed_path)
         
         # Delete temporary files to save disk space
@@ -132,6 +130,6 @@ def process_image():
             'error': str(e)
         }), 500
 
-
+#when app is ran, init the flask server on port 5001, discoverable on local network ip
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
